@@ -23,6 +23,8 @@
   2017/07/12 - v0.1 Case sensor, case fan controls
   2017/07/27 - v0.1.1 Mount & CCD serial command
   2017/07/28 - v0.1.2 Added EEPROM support to save mount, ccd and light last state
+  2017/08/05 - v0.1.3 Added an external step relay on K8 due to not overload K8 array relay
+               Added: k8 pulse relay, save last state, avoid double commands
 */
 /**************************************************************************/
 
@@ -61,7 +63,7 @@ Adafruit_MCP9808 caseSensor = Adafruit_MCP9808();
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("MaggiorDome 0.1.2");
+  Serial.println("MaggiorDome 0.1.3");
 
   // Relay pins initialization
   // Case FANs:
@@ -97,11 +99,9 @@ void setup() {
   } else {
   digitalWrite(k7,HIGH);
   }
+  digitalWrite(k8,HIGH);
   if ( EEPROM.read(k8) == 1 ) {
-    digitalWrite(k8, LOW);
-    Serial.println("Recover: CCD ON");
-  } else {
-    digitalWrite(k8,HIGH);
+    Serial.println("Recover: CCD was ON");
   }
   
   // Make sure the sensor is found, you can also pass in a different i2c
@@ -166,13 +166,25 @@ void loop() {
         EEPROM.write(k7, 0);
         Serial.println("Mount OFF");
     } else if ( cmd == 'M' ) {
-        digitalWrite(k8, LOW);
-        EEPROM.write(k8, 1);
-        Serial.println("CCD ON");
+        if ( EEPROM.read(k8) == 0 ) {
+          digitalWrite(k8, LOW);
+          delay(250);
+          digitalWrite(k8, HIGH);
+          EEPROM.write(k8, 1);
+          Serial.println("CCD ON");
+        } else {
+          Serial.println("Warning: CCD was just ON");
+        }
     } else if ( cmd == 'N' ) {
-        digitalWrite(k8, HIGH);
-        EEPROM.write(k8, 0);
-        Serial.println("CCD OFF");
+      if ( EEPROM.read(k8) == 1 ) {
+          digitalWrite(k8, LOW);
+          delay(250);
+          digitalWrite(k8, HIGH);
+          EEPROM.write(k8, 0);
+          Serial.println("CCD OFF");
+      } else {
+        Serial.println("Warning: CCD was just OFF");
+      }
     }
     
     Serial.flush();
