@@ -93,11 +93,9 @@ void setup() {
   digitalWrite(k4,HIGH);
   digitalWrite(k5,HIGH);
   digitalWrite(k6,HIGH);
-  if ( EEPROM.read(k7) == 1 ) {
-    digitalWrite(k7, LOW);
-    Serial.println("Recover: Mount ON");
-  } else {
   digitalWrite(k7,HIGH);
+  if ( EEPROM.read(k7) == 1 ) {
+    Serial.println("Recover: Mount ON");
   }
   digitalWrite(k8,HIGH);
   if ( EEPROM.read(k8) == 1 ) {
@@ -108,7 +106,6 @@ void setup() {
   // address with tempsensor.begin(0x18) for example
   if (!caseSensor.begin(0x18)) {
     Serial.println("Couldn't find case temperature sensor!");
-    while (1);
   }
 }
 
@@ -158,13 +155,25 @@ void loop() {
         EEPROM.write(k6, 0);
         Serial.println("k4 relay deactivated");
     } else if ( cmd == 'K' ) {
-        digitalWrite(k7, LOW);
-        EEPROM.write(k7, 1);
-        Serial.println("Mount ON");
+      if ( EEPROM.read(k7) == 0 ) {
+          digitalWrite(k7, LOW);
+          delay(250);
+          digitalWrite(k7, HIGH);
+          EEPROM.write(k7, 1);
+          Serial.println("Munt ON");
+        } else {
+          Serial.println("Warning: Mount was just ON");
+        }
     } else if ( cmd == 'L' ) {
-        digitalWrite(k7, HIGH);
-        EEPROM.write(k7, 0);
-        Serial.println("Mount OFF");
+      if ( EEPROM.read(k7) == 1 ) {
+          digitalWrite(k7, LOW);
+          delay(250);
+          digitalWrite(k7, HIGH);
+          EEPROM.write(k7, 0);
+          Serial.println("Mount OFF");
+      } else {
+        Serial.println("Warning: Mount was just OFF");
+      }
     } else if ( cmd == 'M' ) {
         if ( EEPROM.read(k8) == 0 ) {
           digitalWrite(k8, LOW);
